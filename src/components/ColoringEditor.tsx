@@ -137,12 +137,75 @@ export default function ColoringEditor({ svgContent, onSave, onClear }: Props) {
 
   return (
     <div
-      className="flex gap-3"
-      style={{ height: "calc(100vh - 96px)", minHeight: "520px" }}
+      className="flex flex-col"
+      style={{ height: "calc(100vh - 90px)" }}
     >
-      {/* Canvas — крупный план */}
+      {/* Top toolbar */}
       <div
-        className="flex-1 rounded-3xl overflow-hidden shadow-lg flex items-center justify-center"
+        className="flex items-center gap-2 px-2 py-1.5 rounded-2xl mb-2 flex-shrink-0 flex-wrap"
+        style={{ background: "var(--color-card)" }}
+      >
+        {/* Инструменты */}
+        <button
+          onClick={() => setTool("fill")}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold text-xs transition-all"
+          style={{
+            background: tool === "fill" ? "var(--color-primary)" : "var(--color-btn-bg)",
+            color: tool === "fill" ? "white" : "var(--color-btn-text)",
+          }}
+        >
+          🪣 Заливка
+        </button>
+        <button
+          onClick={() => setTool("eraser")}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold text-xs transition-all"
+          style={{
+            background: tool === "eraser" ? "#FF6B6B" : "var(--color-btn-bg)",
+            color: tool === "eraser" ? "white" : "var(--color-btn-text)",
+          }}
+        >
+          🧹 Ластик
+        </button>
+
+        <div className="w-px h-5 bg-gray-200 mx-1" />
+
+        <button
+          onClick={handleUndo}
+          disabled={history.length === 0}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold text-xs transition-all disabled:opacity-40"
+          style={{ background: "var(--color-btn-bg)", color: "var(--color-btn-text)" }}
+        >
+          <Icon name="Undo2" size={13} /> Отмена
+        </button>
+        <button
+          onClick={handleReset}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold text-xs transition-all"
+          style={{ background: "var(--color-btn-bg)", color: "var(--color-btn-text)" }}
+        >
+          <Icon name="RotateCcw" size={13} /> Сброс
+        </button>
+
+        <div className="flex-1" />
+
+        <button
+          onClick={() => setShowSaveModal(true)}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold text-xs text-white transition-all"
+          style={{ background: "var(--color-primary)" }}
+        >
+          <Icon name="Save" size={13} /> Сохранить
+        </button>
+        <button
+          onClick={handleDownload}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold text-xs transition-all"
+          style={{ background: "var(--color-btn-bg)", color: "var(--color-btn-text)" }}
+        >
+          <Icon name="Download" size={13} /> Скачать
+        </button>
+      </div>
+
+      {/* Canvas — максимальный размер */}
+      <div
+        className="flex-1 rounded-2xl overflow-hidden flex items-center justify-center min-h-0"
         style={{
           background: "white",
           border: "3px solid var(--color-border)",
@@ -151,161 +214,103 @@ export default function ColoringEditor({ svgContent, onSave, onClear }: Props) {
       >
         <div
           ref={svgRef}
-          className="w-full h-full flex items-center justify-center p-2"
+          className="w-full h-full flex items-center justify-center"
           onClick={handleSvgClick}
           dangerouslySetInnerHTML={{ __html: currentSvg }}
-          style={{ maxWidth: "100%", maxHeight: "100%" }}
         />
       </div>
 
-      {/* Right panel */}
-      <div className="w-60 flex flex-col gap-2 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+      {/* Bottom palette */}
+      <div
+        className="flex items-center gap-3 px-3 py-2 rounded-2xl mt-2 flex-shrink-0 flex-wrap"
+        style={{ background: "var(--color-card)" }}
+      >
+        {/* Текущий цвет */}
+        <div
+          className="w-8 h-8 rounded-xl flex-shrink-0 border-2 border-white"
+          style={{ background: selectedColor, boxShadow: `0 2px 8px ${selectedColor}99` }}
+          title={selectedColor}
+        />
 
-        {/* Tools row */}
-        <div className="rounded-2xl p-2.5 flex flex-col gap-2 shadow-sm" style={{ background: "var(--color-card)" }}>
-          <div className="flex gap-1.5">
+        <div className="w-px h-5 bg-gray-200" />
+
+        {/* Переключатель палитры */}
+        <div className="flex gap-1">
+          {PALETTES.map((p, i) => (
             <button
-              onClick={() => setTool("fill")}
-              className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl font-bold text-xs transition-all"
+              key={i}
+              onClick={() => setActivePalette(i)}
+              className="w-7 h-7 rounded-lg text-sm transition-all hover:scale-110"
               style={{
-                background: tool === "fill" ? "var(--color-primary)" : "var(--color-btn-bg)",
-                color: tool === "fill" ? "white" : "var(--color-btn-text)",
+                background: activePalette === i ? "var(--color-primary)" : "var(--color-btn-bg)",
+                boxShadow: activePalette === i ? "0 2px 8px var(--color-primary-shadow)" : "none",
               }}
+              title={p.name}
             >
-              <span>🪣</span> Заливка
+              {p.emoji}
             </button>
+          ))}
+        </div>
+
+        <div className="w-px h-5 bg-gray-200" />
+
+        {/* Цвета активной палитры */}
+        <div className="flex gap-1.5 flex-wrap">
+          {PALETTES[activePalette].colors.map((color) => (
             <button
-              onClick={() => setTool("eraser")}
-              className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl font-bold text-xs transition-all"
+              key={color}
+              onClick={() => { setSelectedColor(color); setTool("fill"); }}
+              className="w-8 h-8 rounded-xl transition-all hover:scale-110"
               style={{
-                background: tool === "eraser" ? "#FF6B6B" : "var(--color-btn-bg)",
-                color: tool === "eraser" ? "white" : "var(--color-btn-text)",
+                background: color,
+                boxShadow: selectedColor === color ? `0 0 0 2px white, 0 0 0 4px ${color}` : `0 2px 6px ${color}55`,
+                transform: selectedColor === color ? "scale(1.2)" : undefined,
               }}
-            >
-              <span>🧹</span> Ластик
-            </button>
-          </div>
-          <div className="flex gap-1.5">
-            <button
-              onClick={handleUndo}
-              disabled={history.length === 0}
-              className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl font-bold text-xs transition-all disabled:opacity-40"
-              style={{ background: "var(--color-btn-bg)", color: "var(--color-btn-text)" }}
-            >
-              <Icon name="Undo2" size={13} /> Отмена
-            </button>
-            <button
-              onClick={handleReset}
-              className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-xl font-bold text-xs transition-all"
-              style={{ background: "var(--color-btn-bg)", color: "var(--color-btn-text)" }}
-            >
-              <Icon name="RotateCcw" size={13} /> Сброс
-            </button>
-          </div>
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => setShowSaveModal(true)}
-              className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl font-bold text-xs text-white transition-all"
-              style={{ background: "var(--color-primary)" }}
-            >
-              <Icon name="Save" size={13} /> Сохранить
-            </button>
-            <button
-              onClick={handleDownload}
-              className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl font-bold text-xs transition-all"
-              style={{ background: "var(--color-btn-bg)", color: "var(--color-btn-text)" }}
-            >
-              <Icon name="Download" size={13} /> Скачать
-            </button>
-          </div>
-        </div>
-
-        {/* Selected color */}
-        <div className="rounded-2xl px-3 py-2 shadow-sm flex items-center gap-2.5" style={{ background: "var(--color-card)" }}>
-          <div
-            className="w-9 h-9 rounded-xl flex-shrink-0 border-2 border-white"
-            style={{ background: selectedColor, boxShadow: `0 3px 10px ${selectedColor}88` }}
-          />
-          <div>
-            <p className="font-black text-sm leading-tight" style={{ color: "var(--color-text)" }}>{selectedColor}</p>
-            <p className="text-xs font-medium" style={{ color: "var(--color-text-muted)" }}>
-              {tool === "fill" ? "🪣 Заливка" : "🧹 Ластик"}
-            </p>
-          </div>
-        </div>
-
-        {/* Palette tabs */}
-        <div className="rounded-2xl p-2.5 shadow-sm" style={{ background: "var(--color-card)" }}>
-          <div className="flex flex-wrap gap-1 mb-2">
-            {PALETTES.map((p, i) => (
-              <button
-                key={i}
-                onClick={() => setActivePalette(i)}
-                className="px-1.5 py-0.5 rounded-lg text-xs font-bold transition-all"
-                style={{
-                  background: activePalette === i ? "var(--color-primary)" : "var(--color-btn-bg)",
-                  color: activePalette === i ? "white" : "var(--color-btn-text)",
-                }}
-              >
-                {p.emoji}
-              </button>
-            ))}
-            <span className="text-xs font-bold self-center ml-1" style={{ color: "var(--color-text-muted)" }}>
-              {PALETTES[activePalette].name}
-            </span>
-          </div>
-          <div className="grid grid-cols-4 gap-1.5">
-            {PALETTES[activePalette].colors.map((color) => (
-              <button
-                key={color}
-                onClick={() => { setSelectedColor(color); setTool("fill"); }}
-                className="aspect-square rounded-xl transition-all hover:scale-110"
-                style={{
-                  background: color,
-                  boxShadow: selectedColor === color ? `0 0 0 2px white, 0 0 0 4px ${color}` : `0 2px 6px ${color}55`,
-                  transform: selectedColor === color ? "scale(1.15)" : undefined,
-                }}
-                title={color}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Custom palette */}
-        <div className="rounded-2xl p-2.5 shadow-sm" style={{ background: "var(--color-card)" }}>
-          <p className="font-bold text-xs mb-2" style={{ color: "var(--color-text-muted)" }}>✨ Свои цвета</p>
-          <div className="flex gap-1.5 mb-2">
-            <input
-              type="color"
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              className="w-10 h-8 rounded-lg cursor-pointer border-2 border-white shadow"
-              style={{ padding: "2px" }}
+              title={color}
             />
-            <button
-              onClick={addCustomColor}
-              className="flex-1 rounded-xl font-bold text-xs text-white transition-all"
-              style={{ background: "var(--color-primary)" }}
-            >
-              + Добавить
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {customColors.map((color) => (
-              <button
-                key={color}
-                onClick={() => { setSelectedColor(color); setTool("fill"); }}
-                className="w-8 h-8 rounded-xl transition-all hover:scale-110"
-                style={{
-                  background: color,
-                  boxShadow: selectedColor === color ? `0 0 0 2px white, 0 0 0 4px ${color}` : `0 2px 6px ${color}66`,
-                  transform: selectedColor === color ? "scale(1.2)" : undefined,
-                }}
-                title={color}
-              />
-            ))}
-          </div>
+          ))}
         </div>
+
+        <div className="w-px h-5 bg-gray-200" />
+
+        {/* Свой цвет */}
+        <input
+          type="color"
+          value={customInput}
+          onChange={(e) => setCustomInput(e.target.value)}
+          className="w-8 h-8 rounded-xl cursor-pointer border-2 border-white shadow flex-shrink-0"
+          style={{ padding: "2px" }}
+          title="Свой цвет"
+        />
+        <button
+          onClick={addCustomColor}
+          className="px-3 py-1.5 rounded-xl font-bold text-xs text-white transition-all flex-shrink-0"
+          style={{ background: "var(--color-primary)" }}
+        >
+          + Добавить
+        </button>
+
+        {/* Свои цвета */}
+        {customColors.length > 0 && (
+          <>
+            <div className="w-px h-5 bg-gray-200" />
+            <div className="flex gap-1.5">
+              {customColors.map((color) => (
+                <button
+                  key={color}
+                  onClick={() => { setSelectedColor(color); setTool("fill"); }}
+                  className="w-8 h-8 rounded-xl transition-all hover:scale-110"
+                  style={{
+                    background: color,
+                    boxShadow: selectedColor === color ? `0 0 0 2px white, 0 0 0 4px ${color}` : `0 2px 6px ${color}66`,
+                    transform: selectedColor === color ? "scale(1.2)" : undefined,
+                  }}
+                  title={color}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Save Modal */}

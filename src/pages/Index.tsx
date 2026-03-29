@@ -261,7 +261,7 @@ export default function Index() {
       </nav>
 
       {/* Main Content */}
-      <main className={`container mx-auto max-w-6xl ${activeTab === "editor" ? "px-3 py-3" : "px-4 py-6"}`}>
+      <main className={activeTab === "editor" ? "px-3 overflow-hidden" : "container mx-auto max-w-6xl px-4 py-6"}>
         {activeTab === "editor" && (
           <ColoringEditor
             svgContent={svgContent}
