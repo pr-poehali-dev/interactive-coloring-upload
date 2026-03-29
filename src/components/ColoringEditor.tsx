@@ -138,7 +138,7 @@ export default function ColoringEditor({ svgContent, onSave, onClear }: Props) {
   return (
     <div
       className="flex gap-3"
-      style={{ height: "calc(100vh - 130px)", minHeight: "520px" }}
+      style={{ height: "calc(100vh - 96px)", minHeight: "520px" }}
     >
       {/* Canvas — крупный план */}
       <div
